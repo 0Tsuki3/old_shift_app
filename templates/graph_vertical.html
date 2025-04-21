@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>縦棒シフト人数</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 20px;
+    }
+    .main-container {
+      display: flex;
+      align-items: flex-start;
+      max-height: 1000px;
+      overflow-x: auto;
+      overflow-y: auto;
+      gap: 10px;
+    }
+    .time-and-bar-column {
+      display: flex;
+    }
+    .time-column {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      margin-right: 5px;
+    }
+    .time-label {
+      height: auto;
+      padding: 2px 5px;
+      font-size: 11px;
+      color: #333;
+      white-space: nowrap;
+      line-height: 1;
+    }
+    .day-bar {
+      width: 60px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      border: 1px solid #ccc;
+      background: #f8f8f8;
+    }
+    .segment {
+      width: 100%;
+      text-align: center;
+      font-size: 12px;
+      color: white;
+      background: steelblue;
+      border-top: 1px solid #000;
+      position: relative;
+      min-height: 2px;
+    }
+    .segment-label {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-weight: bold;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+    .date-label {
+      text-align: center;
+      margin-top: 5px;
+      font-size: 13px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h2>時間ごとのシフト人数（縦棒表示）</h2>
+  <div class="main-container">
+    {% for date, segments in bar_data.items() %}
+    <div class="time-and-bar-column">
+      <!-- 時刻ラベル -->
+      <div class="time-column">
+        {% for seg in segments %}
+          <div class="time-label" style="height: {{ seg.duration * 0.8 }}px;">
+            {{ (seg.start[:2]|int + (seg.start[3:]|int) / 60)|round(1) }}
+          </div>
+        {% endfor %}
+      </div>
+
+      <!-- 人数棒 -->
+      <div class="day-bar">
+        {% for seg in segments %}
+        <div class="segment" style="height: {{ seg.duration * 0.8 }}px;">
+          <div class="segment-label">
+            {% if seg.duration > 0.5 %}{{ seg.count }}人{% endif %}
+          </div>
+        </div>
+        {% endfor %}
+        <div class="date-label">{{ date[5:] }}</div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</body>
+</html>

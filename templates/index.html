@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>シフト表（上下左右固定対応）</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; margin: 0; }
+        .header-bar {
+            position: sticky;
+            top: 0;
+            background: white;
+            padding: 10px 0;
+            z-index: 20;
+        }
+        .table-wrapper {
+            overflow: auto;
+            max-height: 80vh;
+        }
+        table {
+            border-collapse: collapse;
+            width: max-content;
+            min-width: 100%;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 5px;
+            text-align: center;
+            white-space: nowrap;
+        }
+        th {
+            background-color: #f0f0f0;
+            z-index: 10;
+        }
+        th.sticky-left,
+        td.sticky-left {
+            position: sticky;
+            left: 0;
+            background-color: #fff;
+            z-index: 15;
+            min-width: 100px;
+        }
+        th.sticky-top {
+            position: sticky;
+            top: 0;
+            z-index: 12;
+        }
+        td.sticky-top-second {
+            position: sticky;
+            top: 33px;
+            background-color: #f9f9f9;
+            z-index: 11;
+        }
+        .edit input { width: 60px; }
+        .edit-cell.error {
+            background-color: #ffcccc !important;
+            border: 2px solid red;
+        }
+        .edit-cell.changed {
+            background-color: #d0f0ff !important;
+        }
+        .mode-toggle {
+            margin-right: 10px;
+        }
+        .group-separator td {
+            background-color: #eef;
+            font-weight: bold;
+        }
+        .group-label {
+            text-align: left;
+            padding-left: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header-bar">
+        <button class="mode-toggle" onclick="toggleEditMode()">編集モード切替</button>
+        <button type="submit" form="shiftForm">保存</button>
+    </div>
+
+    <div class="table-wrapper">
+    <form id="shiftForm" method="post" action="/shift/save">
+        <table>
+            <thead>
+                <tr>
+                    <th class="sticky-left sticky-top" rowspan="2">名前</th>
+                    {% for date in dates %}
+                        <th class="sticky-top">{{ date }}</th>
+                    {% endfor %}
+                    <th class="sticky-top" rowspan="2">月間合計</th>
+                </tr>
+                <tr>
+                    {% for _ in dates %}
+                        <td class="sticky-top-second">労働時間</td>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for staff in staff_list %}
+                    {% if loop.index0 == 0 or staff.group != staff_list[loop.index0 - 1].group %}
+                        <tr class="group-separator">
+                            <td class="sticky-left group-label">▼ {{ group_name_map[staff.group] }}</td>
+                            <td colspan="{{ dates|length + 1 }}"></td>
+                        </tr>
+                    {% endif %}
+                    <tr>
+                        <td class="sticky-left">{{ staff.name }}</td>
+                        {% for date in dates %}
+                        <td class="edit-cell">
+                            <span>
+                                {% if shifts[staff.name][date] %}
+                                    {{ shifts[staff.name][date][0] }}-{{ shifts[staff.name][date][1] }}
+                                {% endif %}
+                            </span>
+                            <div class="edit" style="display:none;">
+                                <input type="time" name="start_{{ staff.name }}_{{ date }}" value="{{ shifts[staff.name][date][0] if shifts[staff.name][date] else '' }}">
+                                <input type="time" name="end_{{ staff.name }}_{{ date }}" value="{{ shifts[staff.name][date][1] if shifts[staff.name][date] else '' }}">
+                            </div>
+                        </td>
+                        {% endfor %}
+                        <td>
+                            {% if staff.position == '社員' %}
+                                {{ total_hours.get(staff.name, 0) | round(1) }}h
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% if staff.position == '社員' %}
+                    <tr>
+                        <td class="sticky-left"></td>
+                        {% for date in dates %}
+                            <td>
+                                {% if shifts[staff.name][date] %}
+                                    {{ calculate_shift_hours(shifts[staff.name][date][0], shifts[staff.name][date][1]) | round(1) }}h
+                                {% endif %}
+                            </td>
+                        {% endfor %}
+                        <td></td>
+                    </tr>
+                    {% endif %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </form>
+    </div>
+
+    <script>
+        function toggleEditMode() {
+            const allCells = document.querySelectorAll('.edit-cell');
+            allCells.forEach(cell => {
+                const span = cell.querySelector('span');
+                const edit = cell.querySelector('.edit');
+                if (span.style.display === "none") {
+                    span.style.display = "inline";
+                    edit.style.display = "none";
+                } else {
+                    span.style.display = "none";
+                    edit.style.display = "block";
+                }
+            });
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            const form = document.querySelector("form");
+
+            const cells = document.querySelectorAll(".edit-cell");
+            cells.forEach(cell => {
+                const inputs = cell.querySelectorAll("input");
+                inputs.forEach(input => {
+                    input.dataset.original = input.value;
+                    input.addEventListener("input", () => {
+                        const changed = Array.from(inputs).some(i => i.value !== i.dataset.original);
+                        cell.classList.toggle("changed", changed);
+                    });
+                });
+            });
+
+            form.addEventListener("submit", function (e) {
+                let hasError = false;
+                document.querySelectorAll(".edit-cell").forEach(cell => {
+                    cell.classList.remove("error");
+                });
+
+                const rows = document.querySelectorAll(".edit");
+                for (const row of rows) {
+                    const cell = row.closest(".edit-cell");
+                    const inputs = row.querySelectorAll("input");
+                    if (inputs.length === 2) {
+                        const start = inputs[0].value;
+                        const end = inputs[1].value;
+                        if (start && end && start >= end) {
+                            hasError = true;
+                            cell.classList.add("error");
+                        }
+                    }
+                }
+
+                if (hasError) {
+                    alert("エラーがあります：終了時間は開始時間より後にしてください。");
+                    e.preventDefault();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

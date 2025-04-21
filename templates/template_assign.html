@@ -1,0 +1,39 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>曜日テンプレートでシフト一括登録</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        form { max-width: 700px; margin: auto; display: flex; flex-direction: column; gap: 15px; }
+        label { font-weight: bold; }
+        .weekday-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+        .day-box { display: flex; flex-direction: column; }
+        input[type="time"] { width: 100%; }
+    </style>
+</head>
+<body>
+    <h1>曜日ごとの時間帯テンプレート適用</h1>
+    <form action="/template_assign" method="post">
+        <label for="staff_name">スタッフ名</label>
+        <select name="staff_name" id="staff_name" required>
+            {% for staff in staff_list %}
+            <option value="{{ staff.name }}">{{ staff.name }}</option>
+            {% endfor %}
+        </select>
+
+        <div class="weekday-grid">
+            {% for day in ['月','火','水','木','金','土','日'] %}
+            <div class="day-box">
+                <label>{{ day }}曜日</label>
+                <input type="time" name="start_{{ loop.index0 }}">
+                <input type="time" name="end_{{ loop.index0 }}">
+            </div>
+            {% endfor %}
+        </div>
+
+        <button type="submit">1か月分に適用</button>
+    </form>
+</body>
+</html>

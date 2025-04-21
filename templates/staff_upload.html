@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>スタッフCSVアップロード</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        h1 { margin-bottom: 10px; }
+        form { border: 1px solid #ccc; padding: 20px; max-width: 500px; margin-bottom: 30px; }
+        input[type="file"], button { font-size: 16px; padding: 5px; }
+        pre { background: #f9f9f9; padding: 10px; border-left: 4px solid #ccc; }
+        .example { margin-top: 20px; }
+        a { color: #0066cc; }
+    </style>
+</head>
+<body>
+    <h1>スタッフCSVアップロード</h1>
+
+    <form method="post" enctype="multipart/form-data">
+        <label for="file">CSVファイルを選択：</label><br>
+        <input type="file" name="file" accept=".csv" required>
+        <br><br>
+        <button type="submit">アップロード</button>
+    </form>
+
+    <div class="example">
+        <h2>📄 CSVフォーマットについて</h2>
+        <p>以下の形式でCSVを作成してください（ヘッダー付き）：</p>
+        <pre>
+name,position,experience,role,time_category
+</pre>
+
+        <p><strong>例：</strong>（※実際のファイルにはデータを記入してください）</p>
+        <pre>
+山田,社員,ベテラン,両方,複数
+佐藤,バイト,新人,キッチン,朝
+        </pre>
+
+        <p>💡 Googleスプレッドシートを使いたい方はこちら：</p>
+        <p>
+            <a href="https://docs.google.com/spreadsheets/d/1C8HnRUQhiIkH-ULnbiuPov5TvRu_Z9ns8gAp9h7Rd0M/copy" target="_blank">
+                📥 Googleスプレッドシート版テンプレートをコピー
+            </a>
+        </p>
+        <p>コピー後、「<strong>ファイル &gt; ダウンロード &gt; CSV（.csv）</strong>」で保存し、上のフォームからアップロードしてください。</p>
+    </div>
+</body>
+</html>

@@ -1,0 +1,37 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>シフトCSVアップロード</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        .container { max-width: 600px; margin: auto; }
+        form { margin-bottom: 30px; }
+        label { font-weight: bold; display: block; margin-bottom: 5px; }
+        input[type="file"], button { padding: 8px; font-size: 16px; }
+        pre { background-color: #f0f0f0; padding: 10px; border-radius: 5px; }
+        h2 { border-bottom: 1px solid #ccc; padding-bottom: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>シフトCSV一括アップロード</h1>
+        <form action="/shift/upload" method="post" enctype="multipart/form-data">
+            <label for="file">CSVファイルを選択:</label>
+            <input type="file" name="file" accept=".csv" required>
+            <br><br>
+            <button type="submit">アップロード</button>
+        </form>
+
+        <h2>CSVフォーマット例</h2>
+        <p>以下のような形式でCSVを作成してください。</p>
+        <pre>
+        staff_name,date,start,end
+        田中,01,09:00,15:00
+        佐藤,05,17:00,23:00
+        </pre>
+            
+    </div>
+</body>
+</html>

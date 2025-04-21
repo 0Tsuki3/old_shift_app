@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>シフト人数グラフ</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <h1>1日の時間帯ごとのシフト人数（例：5月1日）</h1>
+    <canvas id="shiftChart" width="800" height="400"></canvas>
+
+    <script>
+        const labels = {{ time_slots|tojson }};
+        const counts = {{ day_counts["2025-05-01"]|map(attribute="total")|list|tojson }};
+
+        const ctx = document.getElementById('shiftChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: '人数',
+                    data: counts,
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    y: { beginAtZero: true }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

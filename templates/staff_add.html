@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>スタッフ追加</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        form { max-width: 400px; margin: auto; display: flex; flex-direction: column; gap: 10px; }
+        label { font-weight: bold; }
+        input, select, button { font-size: 16px; padding: 5px; }
+    </style>
+</head>
+<body>
+    <h1>スタッフ追加</h1>
+    <form method="post">
+        <label>名前</label>
+        <input type="text" name="name" required>
+
+        <label>区分</label>
+        <select name="position" required>
+            <option value="社員">社員</option>
+            <option value="バイト">バイト</option>
+        </select>
+
+        <label>経験</label>
+        <select name="experience" required>
+            <option value="ベテラン">ベテラン</option>
+            <option value="新人">新人</option>
+        </select>
+
+        <label>ロール</label>
+        <select name="role" required>
+            <option value="両方">両方</option>
+            <option value="キッチン">キッチン</option>
+            <option value="トップ">トップ</option>
+        </select>
+
+        <label>時間帯カテゴリ</label>
+        <select name="time_category" required>
+            <option value="複数">複数</option>
+            <option value="朝">朝</option>
+            <option value="昼">昼</option>
+            <option value="夜">夜</option>
+        </select>
+
+        <button type="submit">登録</button>
+    </form>
+</body>
+</html>

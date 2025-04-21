@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>スタッフ情報編集</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #ccc; padding: 5px; text-align: center; }
+        th { background-color: #f0f0f0; }
+        input, select { width: 100%; padding: 4px; }
+        .changed { background-color: #d0f0ff !important; }
+        .error { background-color: #ffcccc !important; border: 2px solid red; }
+        button { margin-top: 10px; padding: 10px 20px; }
+    </style>
+</head>
+<body>
+    <h1>スタッフ情報編集</h1>
+    <form method="post" action="/staff/edit">
+        <table>
+            <thead>
+                <tr>
+                    <th>名前</th>
+                    <th>区分</th>
+                    <th>経験</th>
+                    <th>ロール</th>
+                    <th>時間帯</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for staff in staff_list %}
+                <tr class="staff-row">
+                    <td><input name="name_{{ loop.index0 }}" value="{{ staff.name }}" required></td>
+                    <td>
+                        <select name="position_{{ loop.index0 }}">
+                            <option value="社員" {% if staff.position == '社員' %}selected{% endif %}>社員</option>
+                            <option value="バイト" {% if staff.position == 'バイト' %}selected{% endif %}>バイト</option>
+                        </select>
+                    </td>
+                    <input type="hidden" name="original_name" value="{{ staff.name }}">
+
+                    <td>
+                        <select name="experience_{{ loop.index0 }}">
+                            <option value="ベテラン" {% if staff.experience == 'ベテラン' %}selected{% endif %}>ベテラン</option>
+                            <option value="新人" {% if staff.experience == '新人' %}selected{% endif %}>新人</option>
+                        </select>
+                    </td>
+                    <td>
+                        <select name="role_{{ loop.index0 }}">
+                            <option value="両方" {% if staff.role == '両方' %}selected{% endif %}>両方</option>
+                            <option value="キッチン" {% if staff.role == 'キッチン' %}selected{% endif %}>キッチン</option>
+                            <option value="トップ" {% if staff.role == 'トップ' %}selected{% endif %}>トップ</option>
+                        </select>
+                    </td>
+                    <td>
+                        <select name="time_category_{{ loop.index0 }}">
+                            <option value="複数" {% if staff.time_category == '複数' %}selected{% endif %}>複数</option>
+                            <option value="朝" {% if staff.time_category == '朝' %}selected{% endif %}>朝</option>
+                            <option value="昼" {% if staff.time_category == '昼' %}selected{% endif %}>昼</option>
+                            <option value="夜" {% if staff.time_category == '夜' %}selected{% endif %}>夜</option>
+                        </select>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <input type="hidden" name="count" value="{{ staff_list|length }}">
+        <button type="submit">保存</button>
+    </form>
+
+    <script>
+        document.querySelectorAll('input, select').forEach(input => {
+            input.dataset.original = input.value;
+            input.addEventListener('input', () => {
+                const changed = input.value !== input.dataset.original;
+                input.classList.toggle('changed', changed);
+            });
+        });
+
+        document.querySelector('form').addEventListener('submit', function (e) {
+            let hasError = false;
+            document.querySelectorAll('input[required]').forEach(input => {
+                if (!input.value.trim()) {
+                    input.classList.add('error');
+                    hasError = true;
+                } else {
+                    input.classList.remove('error');
+                }
+            });
+            if (hasError) {
+                alert("エラーがあります。すべての必須項目を入力してください。");
+                e.preventDefault();
+            }
+        });
+    </script>
+</body>
+</html>
