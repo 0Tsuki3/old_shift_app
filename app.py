@@ -664,4 +664,4 @@ def submit_shift(name):
 
 if __name__ == '__main__':
     register_upload_routes(app, staff_list, shift_list)
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=10000)
