@@ -504,7 +504,7 @@ def register_upload_routes(app, staff_list, shift_list, staff_csv='staff.csv', s
     @app.route('/staff/upload', methods=['GET', 'POST'])
     def upload_staff():
         global staff_list
-        STAFF_FIELDS = ['name', 'position', 'experience', 'role', 'time_category']  # 安全のため定義
+        STAFF_FIELDS = ['name', 'position', 'experience', 'role', 'time_category']
 
         if request.method == 'POST':
             file = request.files.get('file')
@@ -530,21 +530,22 @@ def register_upload_routes(app, staff_list, shift_list, staff_csv='staff.csv', s
                     if os.path.getsize(STAFF_CSV) == 0:
                         writer.writeheader()
                     for staff in new_staff:
-                        writer.writerow({key: staff[key] for key in STAFF_FIELDS})  # groupを除外
+                        writer.writerow({key: staff[key] for key in STAFF_FIELDS})
 
             return redirect(url_for('index'))
         return render_template('staff_upload.html')
 
     @app.route('/shift/upload', methods=['GET', 'POST'])
     def upload_shift():
-        global shift_list  # ← 忘れずに！
+        global shift_list
 
         if request.method == 'POST':
             file = request.files.get('file')
             rows = handle_csv_upload(file, ['staff_name', 'date', 'start', 'end'])
 
             fixed_rows = []
-            for row in rows:                    day = row['date'].zfill(2)
+            for row in rows:
+                day = row['date'].zfill(2)
                 full_date = f"2025-05-{day}"
                 shift = {
                     'staff_name': row['staff_name'],
@@ -552,14 +553,15 @@ def register_upload_routes(app, staff_list, shift_list, staff_csv='staff.csv', s
                     'start': float_to_time_string(row.get('start', '')),
                     'end': float_to_time_string(row.get('end', ''))
                 }
-                 fixed_rows.append(shift)
+                fixed_rows.append(shift)
 
             append_to_csv(SHIFT_CSV, fixed_rows, ['staff_name', 'date', 'start', 'end'])
-                # ⬇ CSVの内容を再読み込みして shift_list に反映
             shift_list = load_shifts()
 
             return redirect(url_for('index'))
         return render_template('shift_upload.html')
+
+
 
 @app.route('/shift/save', methods=['POST'])
 def save_edited_shifts():
