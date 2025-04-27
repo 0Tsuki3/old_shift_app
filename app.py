@@ -2,6 +2,7 @@ import csv
 import os
 from flask import Flask, render_template, request, redirect, url_for
 from datetime import datetime, timedelta
+from flask import send_file
 
 app = Flask(__name__)
 
@@ -105,31 +106,38 @@ def load_shifts():
                     'staff_name': row['staff_name'],
                     'date': row['date'],
                     'start': row['start'],
-                    'end': row['end']
+                    'end': row['end'],
+                    'note': row.get('note', '')  # note列があれば読む
                 })
     except FileNotFoundError:
         pass
     return shift_list
 
 def save_shift(shift):
-    file_exists = False
-    try:
-        with open(SHIFT_CSV, 'r', encoding='utf-8') as f:
-            file_exists = True
-    except FileNotFoundError:
-        pass
+    file_exists = os.path.exists(SHIFT_CSV)
     with open(SHIFT_CSV, 'a', newline='', encoding='utf-8') as f:
-        writer = csv.DictWriter(f, fieldnames=['staff_name', 'date', 'start', 'end'])
-        if not file_exists:
+        writer = csv.DictWriter(f, fieldnames=['staff_name', 'date', 'start', 'end', 'note'])
+        if not file_exists or os.path.getsize(SHIFT_CSV) == 0:
             writer.writeheader()
         writer.writerow(shift)
+
+
 
 staff_list = load_staff()
 shift_list = load_shifts()
 
 def generate_date_list():
     base = datetime(2025, 5, 1)
-    return [(base + timedelta(days=i)).strftime('%Y-%m-%d') for i in range(31)]
+    weekdays = ['（月）', '（火）', '（水）', '（木）', '（金）', '（土）', '（日）']
+    return [
+        {
+            "date": (base + timedelta(days=i)).strftime('%Y-%m-%d'),
+            "label": weekdays[(base + timedelta(days=i)).weekday()] + (base + timedelta(days=i)).strftime('%m-%d'),
+            "note": ""  # ← 備考（デフォルトは空）
+        }
+        for i in range(31)
+    ]
+
 
 def build_shift_dict():
     shift_dict = {staff['name']: {} for staff in staff_list}
@@ -299,76 +307,81 @@ def generate_compact_bar_data():
     staff_info = {s['name']: s for s in staff_list}
     result = {}
 
-    # 日付をすべて取得（例：2025-05-01〜31）
     all_dates = generate_date_list()
 
-    for date in all_dates:
+    for date_info in all_dates:
+        date = date_info['date']
         segments = []
-        slots = generate_time_slots('07:00', '23:30')  # 固定時間
+        slots = generate_time_slots('07:00', '23:30')
         shifts_for_date = [s for s in shift_list if s['date'] == date]
 
         if not shifts_for_date:
-            # シフトがない日はすべて0人の1本の棒で表示
+            # シフトがない日はすべて0人の棒を出す（＋23:30も表示）
             segments.append({
                 "start": "07:00",
                 "end": "23:30",
                 "count": 0,
+                "members": [],
                 "duration": (datetime.strptime("23:30", "%H:%M") - datetime.strptime("07:00", "%H:%M")).seconds / 60
             })
-            # 下端合わせのダミー（23:30）
             segments.append({
                 "start": "23:30",
                 "end": "23:30",
                 "count": 0,
+                "members": [],
                 "duration": 0.1
             })
             result[date] = segments
             continue
 
-        last_count = -1
-        current_start = slots[0]
+        last_members = set()
+        current_start = "07:00"
 
         for slot in slots:
-            count = sum(
-                1 for s in shifts_for_date if
-                datetime.strptime(s['start'], '%H:%M') <= datetime.strptime(slot, '%H:%M') <
-                datetime.strptime(s['end'], '%H:%M')
-            )
-            if count != last_count:
-                if last_count != -1:
-                    duration = (
-                        datetime.strptime(slot, '%H:%M') - datetime.strptime(current_start, '%H:%M')
-                    ).seconds / 60
+            slot_time = datetime.strptime(slot, '%H:%M')
+            current_members = set()
+            for s in shifts_for_date:
+                start = datetime.strptime(s['start'], '%H:%M')
+                end = datetime.strptime(s['end'], '%H:%M')
+                if start <= slot_time < end:
+                    current_members.add(s['staff_name'])
+
+            if current_members != last_members:
+                if last_members or current_start != slot:
+                    duration = (slot_time - datetime.strptime(current_start, '%H:%M')).seconds / 60
                     segments.append({
                         "start": current_start,
                         "end": slot,
-                        "count": last_count,
+                        "count": len(last_members),
+                        "members": list(last_members),
                         "duration": duration
                     })
                 current_start = slot
-                last_count = count
+                last_members = current_members
 
-        # 最終セグメント
-        duration = (
-            datetime.strptime("23:30", "%H:%M") - datetime.strptime(current_start, "%H:%M")
-        ).seconds / 60
-        if duration > 0:
+        # 最後に23:30まで必ず延ばす！！
+        if current_start != "23:30":
+            last_slot_time = datetime.strptime("23:30", "%H:%M")
+            duration = (last_slot_time - datetime.strptime(current_start, '%H:%M')).seconds / 60
             segments.append({
                 "start": current_start,
                 "end": "23:30",
-                "count": last_count,
+                "count": len(last_members),
+                "members": list(last_members),
                 "duration": duration
             })
 
-        # ダミーで23:30のラベルを揃える
+        # さらに、23:30地点にダミー（0.1分）を追加して下端合わせ
         segments.append({
             "start": "23:30",
             "end": "23:30",
             "count": 0,
+            "members": [],
             "duration": 0.1
         })
 
         result[date] = segments
+
     return result
 
 
@@ -382,17 +395,44 @@ def float_to_time_string(value):
         return ""
 
 
+NOTES_CSV = 'notes.csv'  # 新しくこれを追加
+
+def load_notes():
+    notes = {}
+    try:
+        with open(NOTES_CSV, newline='', encoding='utf-8') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                notes[row['date']] = row['note']
+    except FileNotFoundError:
+        pass
+    return notes
+
+def save_notes(notes_dict):
+    with open(NOTES_CSV, 'w', newline='', encoding='utf-8') as f:
+        writer = csv.DictWriter(f, fieldnames=['date', 'note'])
+        writer.writeheader()
+        for date, note in notes_dict.items():
+            writer.writerow({'date': date, 'note': note})
+
 
 @app.route('/graph/vertical')
 def graph_vertical():
     bar_data = generate_compact_bar_data()
-    return render_template('graph_vertical.html', bar_data=bar_data)
+    notes = load_notes()  # ← ここ変わった！！
+    return render_template('graph_vertical.html', bar_data=bar_data, notes=notes)
+
+
+
+
 
 
 @app.route('/')
 def index():
     dates = generate_date_list()
     shifts = build_shift_dict()
+    notes = load_notes()  # ← これで読み込む！
+
     total_hours = {}
     for staff in staff_list:
         if staff['position'] == '社員':
@@ -400,13 +440,15 @@ def index():
             for date, times in shifts[staff['name']].items():
                 total += calculate_shift_hours(*times)
             total_hours[staff['name']] = total
+
     return render_template('index.html',
                             dates=dates,
                             staff_list=staff_list,
                             shifts=shifts,
                             total_hours=total_hours,
                             calculate_shift_hours=calculate_shift_hours,
-                            group_name_map=group_name_map)
+                            group_name_map=group_name_map,
+                            notes=notes)  # ← ここ渡す
 
 @app.route('/graph')
 def graph():
@@ -566,15 +608,22 @@ def register_upload_routes(app, staff_list, shift_list, staff_csv='staff.csv', s
 @app.route('/shift/save', methods=['POST'])
 def save_edited_shifts():
     global shift_list
-    shift_list = []
+    shift_list = [] 
+    notes = {}
+
     for staff in staff_list:
-        for date in generate_date_list():
+        for date_info in generate_date_list():
+            date = date_info["date"]
             start_key = f"start_{staff['name']}_{date}"
             end_key = f"end_{staff['name']}_{date}"
+            note_key = f"note_{date}"  # ← ここ注意！staffごとじゃなく、日付単位で備考！
+
             start = request.form.get(start_key)
             end = request.form.get(end_key)
+
             if not start or not end:
                 continue
+
             shift = {
                 'staff_name': staff['name'],
                 'date': date,
@@ -582,12 +631,21 @@ def save_edited_shifts():
                 'end': end
             }
             shift_list.append(shift)
+
+            # 備考の取り出し（最初のstaffの時だけでOK）
+            if note_key not in notes:
+                notes[note_key] = request.form.get(note_key, '')
+
+    # shift.csv保存
     with open(SHIFT_CSV, 'w', newline='', encoding='utf-8') as f:
         writer = csv.DictWriter(f, fieldnames=['staff_name', 'date', 'start', 'end'])
         writer.writeheader()
         writer.writerows(shift_list)
-    return redirect(url_for('index'))
 
+    # notes.csv保存
+    save_notes({k.replace('note_', ''): v for k, v in notes.items()})
+
+    return redirect(url_for('index'))
 
 @app.route('/staff/edit', methods=['GET', 'POST'])
 def edit_staff():
@@ -663,6 +721,62 @@ def submit_shift(name):
         return "シフトを保存しました！"
 
     return render_template("submit_shift.html", name=name)
+
+
+
+@app.route('/view')
+def view_shift():
+    dates = generate_date_list()
+    shifts = build_shift_dict()
+    total_hours = {}
+    for staff in staff_list:
+        if staff['position'] == '社員':
+            total = 0
+            for date, times in shifts[staff['name']].items():
+                total += calculate_shift_hours(*times)
+            total_hours[staff['name']] = total
+
+    # notesも作る！（notes.csvから読む）
+    notes = {}
+    try:
+        with open('notes.csv', newline='', encoding='utf-8') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                notes[row['date']] = row['note']
+    except FileNotFoundError:
+        pass
+
+    return render_template('view_shift.html',
+                            dates=dates,
+                            staff_list=staff_list,
+                            shifts=shifts,
+                            total_hours=total_hours,
+                            calculate_shift_hours=calculate_shift_hours,
+                            group_name_map=group_name_map,
+                            notes=notes)  # ← ここ大事！！
+
+
+
+
+
+
+@app.route('/download/shift')
+def download_shift():
+    return send_file('data/shift.csv', as_attachment=True)
+
+@app.route('/download/staff')
+def download_staff():
+    return send_file('data/staff.csv', as_attachment=True)
+
+@app.route('/download/notes')
+def download_notes():
+    return send_file('data/notes.csv', as_attachment=True)
+
+
+
+@app.route('/download/all')
+def download_all_page():
+    return render_template('download_all.html')
 
 
 

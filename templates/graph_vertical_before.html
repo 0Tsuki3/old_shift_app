@@ -4,9 +4,21 @@
   <meta charset="UTF-8">
   <title>縦棒シフト人数</title>
   <style>
-    body { font-family: sans-serif; margin: 20px; }
-    .main-container { display: flex; align-items: flex-start; max-height: 1000px; overflow-x: auto; gap: 10px; }
-    .time-and-bar-column { display: flex; }
+    body {
+      font-family: sans-serif;
+      margin: 20px;
+    }
+    .main-container {
+      display: flex;
+      align-items: flex-start;
+      max-height: 1000px;
+      overflow-x: auto;
+      overflow-y: auto;
+      gap: 10px;
+    }
+    .time-and-bar-column {
+      display: flex;
+    }
     .time-column {
       display: flex;
       flex-direction: column;
@@ -28,7 +40,6 @@
       justify-content: flex-start;
       border: 1px solid #ccc;
       background: #f8f8f8;
-      position: relative;
     }
     .segment {
       width: 100%;
@@ -39,7 +50,6 @@
       border-top: 1px solid #000;
       position: relative;
       min-height: 2px;
-      cursor: pointer;
     }
     .segment-label {
       position: absolute;
@@ -56,21 +66,10 @@
       font-size: 13px;
       font-weight: bold;
     }
-    .tooltip {
-      position: absolute;
-      background: #fff;
-      border: 1px solid #999;
-      padding: 5px;
-      font-size: 12px;
-      display: none;
-      white-space: nowrap;
-      z-index: 100;
-    }
   </style>
 </head>
 <body>
   <h2>時間ごとのシフト人数（縦棒表示）</h2>
-
   <div class="main-container">
     {% for date, segments in bar_data.items() %}
     <div class="time-and-bar-column">
@@ -86,7 +85,7 @@
       <!-- 人数棒 -->
       <div class="day-bar">
         {% for seg in segments %}
-        <div class="segment" style="height: {{ seg.duration * 0.8 }}px;" data-members="{{ seg.members|join(', ') }}">
+        <div class="segment" style="height: {{ seg.duration * 0.8 }}px;">
           <div class="segment-label">
             {% if seg.duration > 0.5 %}{{ seg.count }}人{% endif %}
           </div>
@@ -97,27 +96,5 @@
     </div>
     {% endfor %}
   </div>
-
-  <div id="tooltip" class="tooltip"></div>
-
-<script>
-const tooltip = document.getElementById('tooltip');
-
-document.querySelectorAll('.segment').forEach(seg => {
-  seg.addEventListener('mouseover', (e) => {
-    const members = seg.dataset.members;
-    if (members) {
-      tooltip.style.display = 'block';
-      tooltip.innerText = members;
-      tooltip.style.left = (e.pageX + 10) + 'px';
-      tooltip.style.top = (e.pageY + 10) + 'px';
-    }
-  });
-  seg.addEventListener('mouseout', () => {
-    tooltip.style.display = 'none';
-  });
-});
-</script>
-
 </body>
 </html>

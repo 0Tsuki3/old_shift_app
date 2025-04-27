@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>シフト表（閲覧用）</title>
+  <style>
+    body { font-family: sans-serif; padding: 10px; margin: 0; }
+    .table-wrapper { overflow-x: auto; }
+    table { border-collapse: collapse; width: 100%; min-width: 600px; }
+    th, td { border: 1px solid #ccc; padding: 5px; text-align: center; white-space: nowrap; font-size: 14px; }
+    th { background-color: #f0f0f0; }
+    th.sticky-left, td.sticky-left { position: sticky; left: 0; background: white; z-index: 5; }
+    .group-separator td { background: #eef; font-weight: bold; }
+    .group-label { text-align: left; padding-left: 8px; }
+    .note-text { font-size: 12px; color: #555; }
+    @media (max-width: 600px) {
+      th, td { font-size: 12px; padding: 3px; }
+    }
+  </style>
+</head>
+<body>
+<h2>シフト表（閲覧用）</h2>
+<div class="table-wrapper">
+<table>
+  <thead>
+    <tr>
+      <th class="sticky-left">名前</th>
+      {% for item in dates %}
+        <th>
+          {{ item.label }}<br>
+          {% if notes.get(item.date) %}
+            <div class="note-text">{{ notes[item.date] }}</div>
+          {% endif %}
+        </th>
+      {% endfor %}
+      <th>月間合計</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for staff in staff_list %}
+      {% if loop.index0 == 0 or staff.group != staff_list[loop.index0 - 1].group %}
+        <tr class="group-separator">
+          <td class="sticky-left group-label">▼ {{ group_name_map[staff.group] }}</td>
+          <td colspan="{{ dates|length + 1 }}"></td>
+        </tr>
+      {% endif %}
+      <tr>
+        <td class="sticky-left">{{ staff.name }}</td>
+        {% for item in dates %}
+          <td>
+            {% if shifts[staff.name][item.date] %}
+              {{ shifts[staff.name][item.date][0] }}-{{ shifts[staff.name][item.date][1] }}
+            {% endif %}
+          </td>
+        {% endfor %}
+        <td>
+          {% if staff.position == '社員' %}
+            {{ total_hours.get(staff.name, 0) | round(1) }}h
+          {% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+</body>
+</html>

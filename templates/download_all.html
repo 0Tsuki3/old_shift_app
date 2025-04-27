@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>すべてダウンロード</title>
+</head>
+<body>
+<h2>データ一括ダウンロード</h2>
+<button onclick="downloadAll()">すべて保存する</button>
+
+<script>
+function downloadAll() {
+  const files = [
+    '/download/shift',
+    '/download/staff',
+    '/download/notes'
+  ];
+  files.forEach(url => {
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = '';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  });
+}
+</script>
+</body>
+</html>
