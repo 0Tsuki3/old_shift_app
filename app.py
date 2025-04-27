@@ -776,11 +776,8 @@ def download_file(filename):
         }
         as_name = download_name_map.get(filename, filename)
 
-        return send_file(
-            path,
-            as_attachment=True,
-            download_name=as_name
-        )
+        return send_file(filepath, as_attachment=True, attachment_filename=filename)
+
     except Exception as e:
         return str(e)
 
