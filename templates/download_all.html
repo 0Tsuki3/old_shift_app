@@ -2,28 +2,21 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>すべてダウンロード</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ファイルダウンロード</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    .button-container { display: flex; flex-direction: column; gap: 15px; }
+    button { padding: 10px 20px; font-size: 16px; cursor: pointer; }
+    a { text-decoration: none; }
+  </style>
 </head>
 <body>
-<h2>データ一括ダウンロード</h2>
-<button onclick="downloadAll()">すべて保存する</button>
-
-<script>
-function downloadAll() {
-  const files = [
-    '/download/shift',
-    '/download/staff',
-    '/download/notes'
-  ];
-  files.forEach(url => {
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = '';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-  });
-}
-</script>
+  <h2>ファイルダウンロード</h2>
+  <div class="button-container">
+    <a href="/download/shift.csv"><button>シフト表をダウンロード</button></a>
+    <a href="/download/staff.csv"><button>スタッフ表をダウンロード</button></a>
+    <a href="/download/notes.csv"><button>備考メモをダウンロード</button></a>
+  </div>
 </body>
 </html>

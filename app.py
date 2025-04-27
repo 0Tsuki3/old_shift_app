@@ -760,23 +760,37 @@ def view_shift():
 
 
 
-@app.route('/download/shift')
-def download_shift():
-    return send_file('data/shift.csv', as_attachment=True)
 
-@app.route('/download/staff')
-def download_staff():
-    return send_file('data/staff.csv', as_attachment=True)
+# --- ファイル個別ダウンロード用 ---
+@app.route('/download/<filename>')
+def download_file(filename):
+    try:
+        # 元ファイルパス
+        path = filename
 
-@app.route('/download/notes')
-def download_notes():
-    return send_file('data/notes.csv', as_attachment=True)
+        # ダウンロード時のファイル名（完全固定）
+        download_name_map = {
+            'shift.csv': 'シフト一覧.csv',
+            'staff.csv': 'スタッフ一覧.csv',
+            'notes.csv': '備考メモ一覧.csv'
+        }
+        as_name = download_name_map.get(filename, filename)
 
+        return send_file(
+            path,
+            as_attachment=True,
+            download_name=as_name
+        )
+    except Exception as e:
+        return str(e)
 
-
-@app.route('/download/all')
+# --- ダウンロード一覧ページ ---
+@app.route('/download_all')
 def download_all_page():
     return render_template('download_all.html')
+
+
+
 
 
 
