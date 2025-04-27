@@ -2,7 +2,11 @@ import csv
 import os
 from flask import Flask, render_template, request, redirect, url_for
 from datetime import datetime, timedelta
-from flask import send_file
+from flask import send_file, send_from_directory, make_response, Response
+import zipfile
+import io
+
+
 
 app = Flask(__name__)
 
@@ -760,31 +764,30 @@ def view_shift():
 
 
 
+@app.route('/download/shift.csv')
+def download_shift():
+    filepath = 'shift.csv'
+    return send_file(filepath, as_attachment=True, attachment_filename='shift.csv')
 
-# --- ファイル個別ダウンロード用 ---
-@app.route('/download/<filename>')
-def download_file(filename):
-    try:
-        # 元ファイルパス
-        path = filename
+@app.route('/download/staff.csv')
+def download_staff():
+    filepath = 'staff.csv'
+    return send_file(filepath, as_attachment=True, attachment_filename='staff.csv')
 
-        # ダウンロード時のファイル名（完全固定）
-        download_name_map = {
-            'shift.csv': 'シフト一覧.csv',
-            'staff.csv': 'スタッフ一覧.csv',
-            'notes.csv': '備考メモ一覧.csv'
-        }
-        as_name = download_name_map.get(filename, filename)
+@app.route('/download/notes.csv')
+def download_notes():
+    filepath = 'notes.csv'
+    return send_file(filepath, as_attachment=True, attachment_filename='notes.csv')
 
-        return send_file(filepath, as_attachment=True, attachment_filename=filename)
-
-    except Exception as e:
-        return str(e)
-
-# --- ダウンロード一覧ページ ---
-@app.route('/download_all')
-def download_all_page():
-    return render_template('download_all.html')
+@app.route('/download/all')
+def download_all():
+    memory_file = io.BytesIO()
+    with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_DEFLATED) as zf:
+        for filename in ['shift.csv', 'staff.csv', 'notes.csv']:
+            if os.path.exists(filename):
+                zf.write(filename)
+    memory_file.seek(0)
+    return send_file(memory_file, as_attachment=True, attachment_filename='shift_data_all.zip', mimetype='application/zip')
 
 
 
