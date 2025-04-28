@@ -612,42 +612,30 @@ def register_upload_routes(app, staff_list, shift_list, staff_csv='staff.csv', s
 @app.route('/shift/save', methods=['POST'])
 def save_edited_shifts():
     global shift_list
-    shift_list = [] 
-    notes = {}
+    shift_list = []  # いったんクリア
 
     for staff in staff_list:
         for date_info in generate_date_list():
             date = date_info["date"]
             start_key = f"start_{staff['name']}_{date}"
             end_key = f"end_{staff['name']}_{date}"
-            note_key = f"note_{date}"  # ← ここ注意！staffごとじゃなく、日付単位で備考！
-
             start = request.form.get(start_key)
             end = request.form.get(end_key)
 
-            if not start or not end:
-                continue
+            if start and end:
+                shift = {
+                    'staff_name': staff['name'],
+                    'date': date,
+                    'start': start,
+                    'end': end
+                }
+                shift_list.append(shift)
 
-            shift = {
-                'staff_name': staff['name'],
-                'date': date,
-                'start': start,
-                'end': end
-            }
-            shift_list.append(shift)
-
-            # 備考の取り出し（最初のstaffの時だけでOK）
-            if note_key not in notes:
-                notes[note_key] = request.form.get(note_key, '')
-
-    # shift.csv保存
-    with open(SHIFT_CSV, 'w', newline='', encoding='utf-8') as f:
+    # shift.csvをちゃんと上書き保存する（Renderでも有効）
+    with open('shift.csv', 'w', newline='', encoding='utf-8') as f:
         writer = csv.DictWriter(f, fieldnames=['staff_name', 'date', 'start', 'end'])
         writer.writeheader()
         writer.writerows(shift_list)
-
-    # notes.csv保存
-    save_notes({k.replace('note_', ''): v for k, v in notes.items()})
 
     return redirect(url_for('index'))
 
