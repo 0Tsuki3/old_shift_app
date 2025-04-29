@@ -438,29 +438,6 @@ def graph_vertical():
 
 
 
-@app.route('/')
-def index():
-    dates = generate_date_list()
-    shifts = build_shift_dict()
-    notes = load_notes()  # ← これで読み込む！
-
-    total_hours = {}
-    for staff in staff_list:
-        if staff['position'] == '社員':
-            total = 0
-            for date, times in shifts[staff['name']].items():
-                total += calculate_shift_hours(*times)
-            total_hours[staff['name']] = total
-
-    return render_template('index.html',
-                            dates=dates,
-                            staff_list=staff_list,
-                            shifts=shifts,
-                            total_hours=total_hours,
-                            calculate_shift_hours=calculate_shift_hours,
-                            group_name_map=group_name_map,
-                            notes=notes)  # ← ここ渡す
-
 @app.route('/graph')
 def graph():
     time_slots = generate_time_slots()
