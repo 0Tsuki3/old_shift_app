@@ -775,28 +775,20 @@ def download_notes():
 def download_all():
     memory_file = io.BytesIO()
     with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_DEFLATED) as zf:
-        # shift.csv（メモリから作成）
-        shift_csv = io.StringIO()
-        shift_writer = csv.DictWriter(shift_csv, fieldnames=['staff_name', 'date', 'start', 'end'])
-        shift_writer.writeheader()
-        shift_writer.writerows(shift_list)
-        zf.writestr('shift.csv', shift_csv.getvalue())
+        # shift.csv
+        if os.path.exists('shift.csv'):
+            with open('shift.csv', 'r', encoding='utf-8') as f:
+                zf.writestr('shift.csv', f.read())
 
-        # staff.csv（メモリから作成）
-        staff_csv = io.StringIO()
-        staff_writer = csv.DictWriter(staff_csv, fieldnames=['name', 'position', 'experience', 'role', 'time_category'])
-        staff_writer.writeheader()
-        staff_writer.writerows([{k: s[k] for k in staff_writer.fieldnames} for s in staff_list])
-        zf.writestr('staff.csv', staff_csv.getvalue())
+        # staff.csv
+        if os.path.exists('staff.csv'):
+            with open('staff.csv', 'r', encoding='utf-8') as f:
+                zf.writestr('staff.csv', f.read())
 
-        # notes.csv（メモリから作成）
-        notes_csv = io.StringIO()
-        notes_writer = csv.DictWriter(notes_csv, fieldnames=['date', 'note'])
-        notes_writer.writeheader()
-        notes_dict = load_notes()
-        for date, note in notes_dict.items():
-            notes_writer.writerow({'date': date, 'note': note})
-        zf.writestr('notes.csv', notes_csv.getvalue())
+        # notes.csv
+        if os.path.exists('notes.csv'):
+            with open('notes.csv', 'r', encoding='utf-8') as f:
+                zf.writestr('notes.csv', f.read())
 
     memory_file.seek(0)
     return send_file(memory_file, as_attachment=True, download_name='shift_data_all.zip', mimetype='application/zip')
