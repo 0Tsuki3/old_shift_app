@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>ログイン</title>
+</head>
+<body>
+    <h2>編集ページ ログイン</h2>
+    {% if error %}
+        <p style="color:red;">パスワードが違います</p>
+    {% endif %}
+    <form method="post">
+        <input type="password" name="password" placeholder="パスワード">
+        <button type="submit">ログイン</button>
+    </form>
+</body>
+</html>

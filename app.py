@@ -5,6 +5,10 @@ from datetime import datetime, timedelta
 from flask import send_file, send_from_directory, make_response, Response
 import zipfile
 import io
+from flask import session
+
+app.secret_key = 'sirangana'  # セッション用の秘密キー（何でもいい）
+PASSWORD = 'tekitou'  # ← ここで好きなパスワード設定
 
 
 
@@ -791,13 +795,67 @@ def download_notes():
 def download_all():
     memory_file = io.BytesIO()
     with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_DEFLATED) as zf:
-        for filename in ['shift.csv', 'staff.csv', 'notes.csv']:
-            if os.path.exists(filename):
-                zf.write(filename)
+        # shift.csv（メモリから作成）
+        shift_csv = io.StringIO()
+        shift_writer = csv.DictWriter(shift_csv, fieldnames=['staff_name', 'date', 'start', 'end'])
+        shift_writer.writeheader()
+        shift_writer.writerows(shift_list)
+        zf.writestr('shift.csv', shift_csv.getvalue())
+
+        # staff.csv（メモリから作成）
+        staff_csv = io.StringIO()
+        staff_writer = csv.DictWriter(staff_csv, fieldnames=['name', 'position', 'experience', 'role', 'time_category'])
+        staff_writer.writeheader()
+        staff_writer.writerows([{k: s[k] for k in staff_writer.fieldnames} for s in staff_list])
+        zf.writestr('staff.csv', staff_csv.getvalue())
+
+        # notes.csv（メモリから作成）
+        notes_csv = io.StringIO()
+        notes_writer = csv.DictWriter(notes_csv, fieldnames=['date', 'note'])
+        notes_writer.writeheader()
+        notes_dict = load_notes()
+        for date, note in notes_dict.items():
+            notes_writer.writerow({'date': date, 'note': note})
+        zf.writestr('notes.csv', notes_csv.getvalue())
+
     memory_file.seek(0)
-    return send_file(memory_file, as_attachment=True, attachment_filename='shift_data_all.zip', mimetype='application/zip')
+    return send_file(memory_file, as_attachment=True, download_name='shift_data_all.zip', mimetype='application/zip')
 
 
+
+@app.route('/', methods=['GET', 'POST'])
+def index():
+    if 'authenticated' not in session:
+        if request.method == 'POST':
+            password = request.form.get('password')
+            if password == PASSWORD:
+                session['authenticated'] = True
+                return redirect(url_for('index'))
+            else:
+                return render_template('login.html', error=True)
+        return render_template('login.html', error=False)
+
+    # ↓↓↓ 元々のindex()の中身（dates = generate_date_list()...）はここから続ける
+    dates = generate_date_list()
+    shifts = build_shift_dict()
+    notes = load_notes()
+
+    total_hours = {}
+    for staff in staff_list:
+        if staff['position'] == '社員':
+            total = 0
+            for date, times in shifts[staff['name']].items():
+                total += calculate_shift_hours(*times)
+            total_hours[staff['name']] = total
+
+    return render_template('index.html',
+                            dates=dates,
+                            staff_list=staff_list,
+                            shifts=shifts,
+                            total_hours=total_hours,
+                            calculate_shift_hours=calculate_shift_hours,
+                            group_name_map=group_name_map,
+                            notes=notes)
 
 
 
