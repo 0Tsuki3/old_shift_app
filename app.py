@@ -7,12 +7,15 @@ import zipfile
 import io
 from flask import session
 
-app.secret_key = 'sirangana'  # セッション用の秘密キー（何でもいい）
-PASSWORD = 'tekitou'  # ← ここで好きなパスワード設定
 
 
 
 app = Flask(__name__)
+
+
+
+app.secret_key = 'sirangana'  # セッション用の秘密キー（何でもいい）
+PASSWORD = 'tekitou'  # ← ここで好きなパスワード設定
 
 
 
