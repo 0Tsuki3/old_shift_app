@@ -3,33 +3,126 @@
 <head>
   <meta charset="UTF-8">
   <title>縦棒シフト人数</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body { font-family: sans-serif; margin: 20px; }
-    .main-container { display: flex; align-items: flex-start; overflow-x: auto; gap: 20px; }
-    .time-and-bar-column { display: flex; flex-direction: column; align-items: center; }
-    .time-column { display: flex; flex-direction: column; align-items: flex-end; margin-right: 5px; }
-    .time-label { height: 24px; font-size: 11px; color: #333; white-space: nowrap; line-height: 24px; }
-    .day-bar { width: 60px; display: flex; flex-direction: column; border: 1px solid #ccc; background: #f8f8f8; }
-    .segment { width: 100%; text-align: center; font-size: 12px; color: white; background: steelblue; border-top: 1px solid #000; position: relative; }
-    .segment-label { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-weight: bold; font-size: 12px; white-space: nowrap; }
-    .date-label { margin-top: 5px; font-size: 13px; font-weight: bold; text-align: center; }
-    .note-text { font-size: 11px; font-weight: normal; margin-top: 2px; color: #555; }
-    .tooltip { display: none; position: absolute; background: #333; color: #fff; padding: 5px 10px; border-radius: 4px; font-size: 12px; white-space: nowrap; pointer-events: none; z-index: 100; }
+    body { font-family: sans-serif; margin: 10px; }
+
+    .main-container {
+      display: flex;
+      align-items: flex-start;
+      overflow-x: auto;
+      gap: 12px;
+      padding-bottom: 10px;
+    }
+
+    .time-and-bar-column {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .date-label {
+      margin-bottom: 4px;
+      font-size: 12px;
+      font-weight: bold;
+      text-align: center;
+      line-height: 1.3;
+    }
+
+    .note-text {
+      height: 16px;  /* ← 備考欄のみ高さ固定 */
+      font-size: 10px;
+      font-weight: normal;
+      color: #555;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+
+    .time-column {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      margin-right: 4px;
+    }
+
+    .time-label {
+      height: 24px;
+      font-size: 11px;
+      color: #333;
+      white-space: nowrap;
+      line-height: 24px;
+    }
+
+    .day-bar {
+      width: 48px;
+      display: flex;
+      flex-direction: column;
+      border: 1px solid #ccc;
+      background: #f8f8f8;
+    }
+
+    .segment {
+      width: 100%;
+      text-align: center;
+      font-size: 12px;
+      color: white;
+      background: steelblue;
+      border-top: 1px solid #000;
+      position: relative;
+    }
+
+    .segment-label {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-weight: bold;
+      font-size: 11px;
+      white-space: nowrap;
+    }
+
+    .tooltip {
+      display: none;
+      position: absolute;
+      background: #333;
+      color: #fff;
+      padding: 5px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      white-space: nowrap;
+      pointer-events: none;
+      z-index: 100;
+    }
+
+    @media (max-width: 600px) {
+      .day-bar { width: 38px; }
+      .segment-label { font-size: 10px; }
+      .date-label { font-size: 11px; }
+      .note-text { font-size: 9px; height: 14px; }
+    }
   </style>
 </head>
 <body>
-<h2>時間ごとのシフト人数（縦棒表示）</h2>
+<h2 style="font-size: 18px;">時間ごとのシフト人数（縦棒表示）</h2>
 
 <div class="main-container">
   {% for date, segments in bar_data.items() %}
   <div class="time-and-bar-column">
+    <div class="date-label">
+      {{ date[5:] }}
+      <div class="note-text">
+        {{ notes.get(date, '') }}
+      </div>
+    </div>
     <div style="display:flex;">
       <div class="time-column">
         {% for seg in segments %}
-          <div class="time-label" style="height: {{ seg.duration * 1.6 }}px;">{{ (seg.start[:2]|int + (seg.start[3:]|int) / 60)|round(1) }}</div>
+          <div class="time-label" style="height: {{ seg.duration * 1.6 }}px;">
+            {{ (seg.start[:2]|int + (seg.start[3:]|int) / 60)|round(1) }}
+          </div>
         {% endfor %}
       </div>
-
       <div class="day-bar">
         {% for seg in segments %}
           <div class="segment" style="height: {{ seg.duration * 1.6 }}px;" data-members="{{ seg.members|join(', ') }}">
@@ -40,14 +133,6 @@
         {% endfor %}
       </div>
     </div>
-
-    <div class="date-label">
-      {{ date[5:] }}
-      {% if notes.get(date) %}
-        <div class="note-text">{{ notes[date] }}</div>
-      {% endif %}
-    </div>
-
   </div>
   {% endfor %}
 </div>
@@ -56,8 +141,8 @@
 
 <script>
 const tooltip = document.getElementById('tooltip');
-
 const segments = document.querySelectorAll('.segment');
+
 segments.forEach(seg => {
   seg.addEventListener('mouseover', (e) => {
     const members = seg.dataset.members;
@@ -74,6 +159,5 @@ segments.forEach(seg => {
   });
 });
 </script>
-
 </body>
 </html>

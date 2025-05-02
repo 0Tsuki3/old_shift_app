@@ -606,8 +606,14 @@ def save_edited_shifts():
             date = date_info["date"]
             start_key = f"start_{staff['name']}_{date}"
             end_key = f"end_{staff['name']}_{date}"
+            delete_key = f"delete_{staff['name']}_{date}"
+
             start = request.form.get(start_key)
             end = request.form.get(end_key)
+            to_delete = request.form.get(delete_key)
+
+            if to_delete:  # チェックされていたらスキップ（削除扱い）
+                continue
 
             if start and end:
                 shift_list.append({
@@ -638,7 +644,6 @@ def save_edited_shifts():
             writer.writerow({'date': date, 'note': note})
 
     return redirect(url_for('index'))
-
 
 
 

@@ -8,7 +8,7 @@
     .header-bar { position: sticky; top: 0; background: white; padding: 10px 0; z-index: 20; }
     .table-wrapper { overflow: auto; max-height: 80vh; }
     table { border-collapse: collapse; width: max-content; min-width: 100%; }
-    th, td { border: 1px solid #ccc; padding: 5px; text-align: center; white-space: nowrap;min-width: 200px;  /* ← 1日あたりこれくらい広げる（もとの80pxくらいの1.5倍） */ }
+    th, td { border: 1px solid #ccc; padding: 5px; text-align: center; white-space: nowrap;min-width: 200px; }
     th { background-color: #f0f0f0; z-index: 10; }
     th.sticky-left, td.sticky-left { position: sticky; left: 0; background-color: #fff; z-index: 15; min-width: 100px; }
     th.sticky-top { position: sticky; top: 0; z-index: 12; }
@@ -19,7 +19,8 @@
     .mode-toggle { margin-right: 10px; }
     .group-separator td { background-color: #eef; font-weight: bold; }
     .group-label { text-align: left; padding-left: 8px; }
-    textarea.note-input { width: 100%; height: 60px; resize: vertical; box-sizing: border-box; /* ← paddingも含めて幅計算するようにする（ズレ防止） */}
+    textarea.note-input { width: 100%; height: 60px; resize: vertical; box-sizing: border-box; }
+    .delete-checkbox { display: block; margin-top: 2px; }
   </style>
 </head>
 <body>
@@ -63,6 +64,7 @@
             <div class="edit" style="display:none;">
               <input type="time" name="start_{{ staff.name }}_{{ item.date }}" value="{{ shifts[staff.name][item.date][0] if shifts[staff.name][item.date] else '' }}">
               <input type="time" name="end_{{ staff.name }}_{{ item.date }}" value="{{ shifts[staff.name][item.date][1] if shifts[staff.name][item.date] else '' }}">
+              <label class="delete-checkbox"><input type="checkbox" name="delete_{{ staff.name }}_{{ item.date }}"> 削除</label>
             </div>
           </td>
         {% endfor %}
@@ -116,7 +118,7 @@ window.addEventListener("DOMContentLoaded", () => {
     });
 
     document.querySelectorAll(".edit").forEach(edit => {
-      const inputs = edit.querySelectorAll("input");
+      const inputs = edit.querySelectorAll("input[type='time']");
       if (inputs.length === 2) {
         const [start, end] = inputs;
         if (start.value && end.value && start.value >= end.value) {
