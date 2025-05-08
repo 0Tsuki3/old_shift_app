@@ -427,6 +427,52 @@ def save_notes(notes_dict):
             writer.writerow({'date': date, 'note': note})
 
 
+
+def generate_daily_summary(shift_list, staff_list):
+    from datetime import datetime
+
+    staff_map = {s['name']: s for s in staff_list}
+    summary = {}
+
+    for shift in shift_list:
+        name = shift['staff_name']
+        date = shift['date']
+        start = shift['start']
+        end = shift['end']
+
+        if not start or not end:
+            continue
+        try:
+            start_dt = datetime.strptime(start, "%H:%M")
+            end_dt = datetime.strptime(end, "%H:%M")
+        except ValueError:
+            continue
+
+        work_time = (end_dt - start_dt).total_seconds() / 3600
+        if work_time <= 0:
+            continue
+
+        staff = staff_map.get(name)
+        if not staff:
+            continue
+
+        if date not in summary:
+            summary[date] = {
+                'employee_hours': 0,
+                'parttimer_hours': 0,
+                'parttimer_wage': 0
+            }
+
+        if staff['position'] == '社員':
+            summary[date]['employee_hours'] += work_time
+        else:
+            summary[date]['parttimer_hours'] += work_time
+            summary[date]['parttimer_wage'] += work_time * 1200
+
+    return summary
+
+
+
 @app.route('/graph/vertical')
 def graph_vertical():
     bar_data = generate_compact_bar_data()
@@ -834,6 +880,29 @@ def index():
                             group_name_map=group_name_map,
                             notes=notes)
 
+
+@app.route('/graph/vertical_admin')
+def graph_vertical_admin():
+    if not session.get("authenticated"):
+        return redirect(url_for('index'))
+
+    # いまは月指定なしでシンプルにする
+    shift_list = load_shifts()
+    staff_list = load_staff()
+    notes = load_notes()
+
+    bar_data = generate_compact_bar_data()  # globalな shift_list/staff_list を使う設計のままでOK
+    summary = generate_daily_summary(shift_list, staff_list)
+
+    return render_template('graph_vertical_admin.html', data=bar_data, summary=summary, notes=notes)
+
+@app.template_filter('datetimeformat')
+def datetimeformat(value, format='%Y-%m-%d'):
+    try:
+        dt = datetime.strptime(value, '%Y-%m-%d')
+        return dt.strftime(format)
+    except:
+        return value
 
 
 
