@@ -162,7 +162,16 @@ def build_shift_dict():
 def calculate_shift_hours(start, end):
     start_time = datetime.strptime(start, '%H:%M')
     end_time = datetime.strptime(end, '%H:%M')
-    return max((end_time - start_time).total_seconds() / 3600 - 1, 0)
+    duration = (end_time - start_time).total_seconds() / 3600
+
+    if duration < 6:
+        break_time = 0
+    elif duration < 8:
+        break_time = 0.5
+    else:
+        break_time = 1
+
+    return max(duration - break_time, 0)
 
 def generate_time_slots(start='07:00', end='23:30'):
     slots = []
@@ -449,8 +458,17 @@ def generate_daily_summary(shift_list, staff_list):
             continue
 
         work_time = (end_dt - start_dt).total_seconds() / 3600
-        if work_time <= 0:
-            continue
+
+        # 休憩時間を差し引く
+        if work_time < 6:
+            break_time = 0
+        elif work_time < 8:
+            break_time = 0.5
+        else:
+            break_time = 1
+
+        work_time = max(work_time - break_time, 0)
+
 
         staff = staff_map.get(name)
         if not staff:
@@ -845,7 +863,6 @@ def download_all():
     return send_file(memory_file, as_attachment=True, download_name='shift_data_all.zip', mimetype='application/zip')
 
 
-
 @app.route('/', methods=['GET', 'POST'])
 def index():
     if 'authenticated' not in session:
@@ -853,12 +870,13 @@ def index():
             password = request.form.get('password')
             if password == PASSWORD:
                 session['authenticated'] = True
-                return redirect(url_for('index'))
+                redirect_url = session.pop('next_url', url_for('index'))  # ← 元のページへ戻す
+                return redirect(redirect_url)
             else:
                 return render_template('login.html', error=True)
         return render_template('login.html', error=False)
 
-    # ↓↓↓ 元々のindex()の中身（dates = generate_date_list()...）はここから続ける
+    # ↓ 通常のトップページ処理
     dates = generate_date_list()
     shifts = build_shift_dict()
     notes = load_notes()
@@ -883,18 +901,19 @@ def index():
 
 @app.route('/graph/vertical_admin')
 def graph_vertical_admin():
-    if not session.get("authenticated"):
+    if 'authenticated' not in session:
+        session['next_url'] = request.path  # 👈 ログイン後にここへ戻る用
         return redirect(url_for('index'))
 
-    # いまは月指定なしでシンプルにする
     shift_list = load_shifts()
     staff_list = load_staff()
     notes = load_notes()
-
-    bar_data = generate_compact_bar_data()  # globalな shift_list/staff_list を使う設計のままでOK
+    bar_data = generate_compact_bar_data()
     summary = generate_daily_summary(shift_list, staff_list)
 
     return render_template('graph_vertical_admin.html', data=bar_data, summary=summary, notes=notes)
+
+
 
 @app.template_filter('datetimeformat')
 def datetimeformat(value, format='%Y-%m-%d'):
